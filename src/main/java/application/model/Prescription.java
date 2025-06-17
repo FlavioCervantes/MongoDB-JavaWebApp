@@ -1,5 +1,6 @@
 package application.model;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import org.springframework.data.annotation.Id;
 
@@ -14,6 +15,14 @@ public class Prescription {
 		private int pharmacyID;
 		private String dateFilled;
 		private String cost;
+			private int id;
+			private int patientId;
+			private int doctorId;
+			private int drugId;
+			private LocalDate datePrescribed;
+			private int quantity;
+			private int refill;
+
 
 
 		public int getPharmacyID() {

@@ -1,6 +1,7 @@
 package application.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,7 +9,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 
 import application.model.*;
-import application.model.Patient;
 import view.PatientView;
 
 @Controller
@@ -23,8 +23,7 @@ public class ControllerPatientUpdate {
 	@Autowired
 	private SequenceService sequence;
 
-	// patient id will display patient's profile
-	@GetMapping("/patient/edit/{id}")
+	@GetMapping("/patient/update/{id}")
 	public String getUpdateForm(@PathVariable int id, Model model) {
 		Patient patient = patientRepository.findById(id).orElse(null);
 
@@ -33,7 +32,6 @@ public class ControllerPatientUpdate {
 			return "index"; // return to home page
 		}
 
-		// populating info from patient to PatientView
 		PatientView pv = new PatientView();
 		pv.setId(patient.getId());
 		pv.setFirstName(patient.getFirstName());
@@ -50,10 +48,8 @@ public class ControllerPatientUpdate {
 		return "patient_edit";
 	}
 
-	// updating patient info from editable fields
-	@PostMapping("/patient/edit")
+	@PostMapping("/patient/update")
 	public String updatePatient(PatientView p, Model model) {
-		// ensure doctor exists by last name
 		Doctor doctor = doctorRepository.findByLastName(p.getPrimaryName()).orElse(null);
 
 		if (doctor == null) {
@@ -62,19 +58,23 @@ public class ControllerPatientUpdate {
 			return "patient_edit";
 		}
 
-		// search for existing patient by ID
 		Patient patient = patientRepository.findById(p.getId()).orElse(null);
 		if (patient == null) {
 			model.addAttribute("message", "Patient not found.");
 			return "index";
 		}
 
-		// editable fields update
 		patient.setDoctorId(doctor.getId());
 		patient.setStreet(p.getStreet());
 		patient.setCity(p.getCity());
 		patient.setState(p.getState());
 		patient.setZipcode(p.getZipcode());
+		patient.setBirthdate(p.getBirthdate());
+		patient.setFirstName(p.getFirstName());
+		patient.setLastName(p.getLastName());
+		patient.setSsn(p.getSsn());
+
+
 
 		patientRepository.save(patient);
 
@@ -82,4 +82,5 @@ public class ControllerPatientUpdate {
 		model.addAttribute("patient", p);
 		return "patient_show";
 	}
+
 }
