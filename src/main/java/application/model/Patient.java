@@ -16,6 +16,7 @@ public class Patient {
 	private String city;
 	private String state;
 	private String zipcode;
+	private String primaryName;
 
 
 
@@ -37,11 +38,11 @@ public class Patient {
 		pd.setFirstName(pv.getFirstName());
 		pd.setId(pv.getId());
 		pd.setLastName(pv.getLastName());
-		pd.setPrimaryName(pv.getPrimaryName());
 		pd.setSsn(pv.getSsn());
 		pd.setState(pv.getState());
 		pd.setStreet(pv.getStreet());
 		pd.setZipcode(pv.getZipcode());
+		pd.setPrimaryName(pv.getPrimaryName());
 		return pd;
 	}
 
@@ -99,6 +100,9 @@ public class Patient {
 	public void setZipcode(String zipcode) {
 		this.zipcode = zipcode;
 	}
+	public String getPrimaryName() { return primaryName; }
+	public void setPrimaryName(String primaryName) { this.primaryName = primaryName; }
+
 
 	@Override
 	public String toString() {
