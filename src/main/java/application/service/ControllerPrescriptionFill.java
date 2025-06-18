@@ -35,24 +35,23 @@ public class ControllerPrescriptionFill {
 
 	@PostMapping("/prescription/fill")
 	public String processFillForm(PrescriptionView p, Model model) {
-		// Validate prescription ID and patient last name
+		// validate prescription ID and patient last name
 		if (p.getRxid() <= 0 || p.getPatientLastName() == null || p.getPatientLastName().isBlank()) {
 			model.addAttribute("message", "Missing prescription ID or patient last name.");
 			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
 
-		// searching for prescription
+		// find prescription
 		Optional<Prescription> presOpt = prescriptionRepository.findById(p.getRxid());
 		if (presOpt.isEmpty()) {
 			model.addAttribute("message", "Prescription not found.");
 			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
-
 		Prescription prescription = presOpt.get();
 
-		// ensure patient's last name matches
+		// validate patient last name
 		Optional<Patient> patientOpt = patientRepository.findById(prescription.getPatientId());
 		if (patientOpt.isEmpty() || !patientOpt.get().getLastName().equalsIgnoreCase(p.getPatientLastName())) {
 			model.addAttribute("message", "Invalid patient last name for this prescription.");
@@ -60,45 +59,33 @@ public class ControllerPrescriptionFill {
 			return "prescription_fill";
 		}
 
-		// checks number of refills left
+		// check if refills remain
 		if (prescription.getFills().size() >= prescription.getRefills() + 1) {
 			model.addAttribute("message", "No refills left for this prescription.");
 			model.addAttribute("prescription", p);
 			return "prescription_show";
 		}
 
-		// trim inputs
-		String name = p.getPatientLastName() != null ? p.getPharmacyName().trim() : "";
+		// trim pharmacy input fields
+		String name = p.getPharmacyName() != null ? p.getPharmacyName().trim() : "";
 		String address = p.getPharmacyAddress() != null ? p.getPharmacyAddress().trim() : "";
 
-		// ensure pharmacy is correct by address and name
-		Pharmacy pharmacy = pharmacyRepository.findByNameAndAddress(p.getPharmacyName(), p.getPharmacyAddress());
+		// Look up pharmacy
+		Pharmacy pharmacy = pharmacyRepository.findByNameAndAddress(name, address);
 		if (pharmacy == null) {
 			model.addAttribute("message", "Pharmacy not found.");
 			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
 
-		// parse data to calculate cost
-		double cost;
-		try {
-			cost = Double.parseDouble(p.getCost()) * p.getQuantity();
-		} catch (NumberFormatException e) {
-			model.addAttribute("message", "Invalid cost.");
-			model.addAttribute("prescription", p);
-			return "prescription_fill";
-		}
-
-		// fill record
 		Prescription.FillRequest fill = new Prescription.FillRequest();
 		fill.setPharmacyID(pharmacy.getId());
 		fill.setDateFilled(LocalDate.now().toString());
-		fill.setCost(String.format("%.2f", cost));
-
+		fill.setCost("0.00");
 		prescription.getFills().add(fill);
 		prescriptionRepository.save(prescription);
 
-		model.addAttribute("message", "Prescription filled.");
+		model.addAttribute("message", "Prescription filled successfully.");
 		model.addAttribute("prescription", p);
 		return "prescription_show";
 	}
