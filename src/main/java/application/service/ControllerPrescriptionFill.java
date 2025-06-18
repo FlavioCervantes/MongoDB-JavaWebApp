@@ -69,7 +69,7 @@ public class ControllerPrescriptionFill {
 
 		// trim inputs
 		String name = p.getPatientLastName() != null ? p.getPharmacyName().trim() : "";
-		String address = p.getPatientLastName() != null ? p.getPharmacyAddress().trim() : "";
+		String address = p.getPharmacyAddress() != null ? p.getPharmacyAddress().trim() : "";
 
 		// ensure pharmacy is correct by address and name
 		Pharmacy pharmacy = pharmacyRepository.findByNameAndAddress(p.getPharmacyName(), p.getPharmacyAddress());
