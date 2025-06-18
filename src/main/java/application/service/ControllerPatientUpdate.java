@@ -1,15 +1,13 @@
 package application.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-
 import application.model.*;
 import view.PatientView;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Optional;
 
 @Controller
 public class ControllerPatientUpdate {
@@ -23,64 +21,67 @@ public class ControllerPatientUpdate {
 	@Autowired
 	private SequenceService sequence;
 
-	@GetMapping("/patient/update/{id}")
+	// 🛠 GET fallback to prevent 405 error when someone directly accesses /patient/edit
+	@GetMapping("/patient/edit")
+	public String handleEditWithoutId() {
+		return "redirect:/patient/get";  // or redirect to home or error page
+	}
+
+	// ✅ Get form to edit patient by ID
+	@GetMapping("/patient/edit/{id}")
 	public String getUpdateForm(@PathVariable int id, Model model) {
-		Patient patient = patientRepository.findById(id).orElse(null);
+		Optional<Patient> optionalPatient = patientRepository.findById(id);
+		if (optionalPatient.isPresent()) {
+			Patient patient = optionalPatient.get();
+			PatientView patientView = new PatientView();
+			patientView.setId(patient.getId());
+			patientView.setFirstName(patient.getFirstName());
+			patientView.setLastName(patient.getLastName());
+			patientView.setStreet(patient.getStreet());
+			patientView.setCity(patient.getCity());
+			patientView.setState(patient.getState());
+			patientView.setZipcode(patient.getZipcode());
+			patientView.setBirthdate(patient.getBirthdate());
+			patientView.setPrimaryName(patient.getPrimaryName());
 
-		if (patient == null) {
-			model.addAttribute("message", "Patient not found");
-			return "index"; // return to home page
-		}
-
-		PatientView pv = new PatientView();
-		pv.setId(patient.getId());
-		pv.setFirstName(patient.getFirstName());
-		pv.setLastName(patient.getLastName());
-		pv.setBirthdate(patient.getBirthdate());
-		pv.setSsn(patient.getSsn());
-		pv.setStreet(patient.getStreet());
-		pv.setCity(patient.getCity());
-		pv.setState(patient.getState());
-		pv.setZipcode(patient.getZipcode());
-		pv.setPrimaryName(patient.getPrimaryName());
-
-		model.addAttribute("patient", pv);
-		return "patient_edit";
-	}
-
-	@PostMapping("/patient/update")
-	public String updatePatient(PatientView p, Model model) {
-		Doctor doctor = doctorRepository.findByLastName(p.getPrimaryName()).orElse(null);
-
-		if (doctor == null) {
-			model.addAttribute("message", "Doctor not found. Check the last name.");
-			model.addAttribute("patient", p);
+			model.addAttribute("patient", patientView);
 			return "patient_edit";
-		}
-
-		Patient patient = patientRepository.findById(p.getId()).orElse(null);
-		if (patient == null) {
+		} else {
 			model.addAttribute("message", "Patient not found.");
-			return "index";
+			return "patient_get";
 		}
-
-		patient.setDoctorId(doctor.getId());
-		patient.setStreet(p.getStreet());
-		patient.setCity(p.getCity());
-		patient.setState(p.getState());
-		patient.setZipcode(p.getZipcode());
-		patient.setBirthdate(p.getBirthdate());
-		patient.setFirstName(p.getFirstName());
-		patient.setLastName(p.getLastName());
-		patient.setSsn(p.getSsn());
-
-
-
-		patientRepository.save(patient);
-
-		model.addAttribute("message", "Patient profile updated successfully.");
-		model.addAttribute("patient", p);
-		return "patient_show";
 	}
 
+	// patient update handling
+	@PostMapping("/patient/edit")
+	public String updatePatient(PatientView patientView, Model model) {
+		Optional<Patient> optionalPatient = patientRepository.findById(patientView.getId());
+		if (optionalPatient.isPresent()) {
+			Patient patient = optionalPatient.get();
+
+			// Update editable fields
+			patient.setStreet(patientView.getStreet());
+			patient.setCity(patientView.getCity());
+			patient.setState(patientView.getState());
+			patient.setZipcode(patientView.getZipcode());
+
+			// Update doctor if provided
+			Optional<Doctor> doctorOpt = doctorRepository.findByLastName(patientView.getPrimaryName());
+			if (doctorOpt.isPresent()) {
+				Doctor doctor = doctorOpt.get();
+				patient.setPrimaryName(doctor.getLastName());
+			} else {
+				model.addAttribute("message", "Doctor not found. Update skipped.");
+			}
+
+			patientRepository.save(patient);
+			model.addAttribute("message", "Update successful.");
+			model.addAttribute("patient", patientView);
+			return "patient_show";
+		} else {
+			model.addAttribute("message", "Patient not found.");
+			model.addAttribute("patient", patientView);
+			return "patient_get";
+		}
+	}
 }

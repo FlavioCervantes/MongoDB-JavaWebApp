@@ -1,6 +1,6 @@
 package application.service;
 
-import application.model.Patient;
+import application.model.*;
 import application.model.PatientRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import view.PatientView;
 
 import java.util.Optional;
+import application.service.SequenceService;
+
 
 @Controller
 public class ControllerPatientCreate {
@@ -29,7 +31,7 @@ public class ControllerPatientCreate {
 	}
 	// Process patient registration
 
-	@PostMapping("/patient/register")
+	@PostMapping("/patient/new")
 	public String createPatient(PatientView p, Model model) {
 		System.out.println("Received patient data: " + p);
 		Patient patient = new Patient();
@@ -62,7 +64,7 @@ public class ControllerPatientCreate {
 	}
 
 	// Process patient search
-	@PostMapping("/patient/get")
+	@PostMapping("/patient/show")
 	public String showPatient(PatientView patientView, Model model) {
 		Optional<Patient> optionalPatient = patientRepository.findById(patientView.getId());
 		if (optionalPatient.isPresent()) {
@@ -87,53 +89,4 @@ public class ControllerPatientCreate {
 		}
 	}
 
-// Request for patient update form
-	@GetMapping("/patient/edit/{id}")
-	public String getUpdateForm(@PathVariable int id, Model model) {
-		Optional<Patient> optionalPatient = patientRepository.findById(id);
-		// If patient exists, prepare the view for editing
-		if (optionalPatient.isPresent()) {
-			Patient patient = optionalPatient.get();
-			PatientView patientView = new PatientView();
-			patientView.setId(patient.getId());
-			patientView.setFirstName(patient.getFirstName());
-			patientView.setLastName(patient.getLastName());
-			patientView.setStreet(patient.getStreet());
-			patientView.setCity(patient.getCity());
-			patientView.setState(patient.getState());
-			patientView.setZipcode(patient.getZipcode());
-			patientView.setBirthdate(patient.getBirthdate());
-			patientView.setPrimaryName(patient.getPrimaryName());
-
-			// Add patient details to the model for editing
-			model.addAttribute("patient", patientView);
-			return "patient_edit";
-		} else {
-			// If patient not found, add a message and return to the search form
-			model.addAttribute("message", "Patient not found.");
-			return "patient_get";
-		}
-	}
-// Process patient update
-	@PostMapping("/patient/edit")
-	public String updatePatient(PatientView patientView, Model model) {
-		Optional<Patient> optionalPatient = patientRepository.findById(patientView.getId());
-		//if patient exists, update the details
-		if (optionalPatient.isPresent()) {
-			Patient patient = optionalPatient.get();
-			patient.setStreet(patientView.getStreet());
-			patient.setCity(patientView.getCity());
-			patient.setState(patientView.getState());
-			patient.setZipcode(patientView.getZipcode());
-			patientRepository.save(patient);
-
-			model.addAttribute("message", "Update successful.");
-			model.addAttribute("patient", patientView);
-			return "patient_show";
-		} else {
-			model.addAttribute("message", "Patient not found.");
-			model.addAttribute("patient", patientView);
-			return "patient_get";
-		}
-	}
 }
