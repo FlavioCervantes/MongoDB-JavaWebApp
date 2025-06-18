@@ -78,6 +78,7 @@ public class ControllerPrescriptionFill {
 			return "prescription_fill";
 		}
 
+		// TODO: determine cost based off pharmacy?
 		Prescription.FillRequest fill = new Prescription.FillRequest();
 		fill.setPharmacyID(pharmacy.getId());
 		fill.setDateFilled(LocalDate.now().toString());
