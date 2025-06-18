@@ -38,6 +38,7 @@ public class ControllerPrescriptionFill {
 		// Validate prescription ID and patient last name
 		if (p.getRxid() <= 0 || p.getPatientLastName() == null || p.getPatientLastName().isBlank()) {
 			model.addAttribute("message", "Missing prescription ID or patient last name.");
+			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
 
@@ -45,6 +46,7 @@ public class ControllerPrescriptionFill {
 		Optional<Prescription> presOpt = prescriptionRepository.findById(p.getRxid());
 		if (presOpt.isEmpty()) {
 			model.addAttribute("message", "Prescription not found.");
+			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
 
@@ -54,6 +56,7 @@ public class ControllerPrescriptionFill {
 		Optional<Patient> patientOpt = patientRepository.findById(prescription.getPatientId());
 		if (patientOpt.isEmpty() || !patientOpt.get().getLastName().equalsIgnoreCase(p.getPatientLastName())) {
 			model.addAttribute("message", "Invalid patient last name for this prescription.");
+			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
 
@@ -64,10 +67,15 @@ public class ControllerPrescriptionFill {
 			return "prescription_show";
 		}
 
+		// trim inputs
+		String name = p.getPatientLastName() != null ? p.getPharmacyName().trim() : "";
+		String address = p.getPatientLastName() != null ? p.getPharmacyAddress().trim() : "";
+
 		// ensure pharmacy is correct by address and name
 		Pharmacy pharmacy = pharmacyRepository.findByNameAndAddress(p.getPharmacyName(), p.getPharmacyAddress());
 		if (pharmacy == null) {
 			model.addAttribute("message", "Pharmacy not found.");
+			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
 
@@ -77,6 +85,7 @@ public class ControllerPrescriptionFill {
 			cost = Double.parseDouble(p.getCost()) * p.getQuantity();
 		} catch (NumberFormatException e) {
 			model.addAttribute("message", "Invalid cost.");
+			model.addAttribute("prescription", p);
 			return "prescription_fill";
 		}
 
