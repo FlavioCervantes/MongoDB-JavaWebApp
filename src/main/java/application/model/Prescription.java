@@ -1,5 +1,6 @@
 package application.model;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import org.springframework.data.annotation.Id;
 
@@ -8,14 +9,22 @@ import org.springframework.data.annotation.Id;
  */
 
 public class Prescription {
-	
+
 	public static class FillRequest {
-		
-		private int pharmacyID;    
-		private String dateFilled;    
+
+		private int pharmacyID;
+		private String dateFilled;
 		private String cost;
-		
-		
+			private int id;
+			private int patientId;
+			private int doctorId;
+			private int drugId;
+			private LocalDate datePrescribed;
+			private int quantity;
+			private int refill;
+
+
+
 		public int getPharmacyID() {
 			return pharmacyID;
 		}
@@ -39,9 +48,9 @@ public class Prescription {
 			return "PrescriptionFill [pharmacyID=" + pharmacyID + ", dateFilled=" + dateFilled + ", cost=" + cost + "]";
 		}
 	}
-	
+
 	@Id
-	private int rxid;   
+	private int rxid;
 	// following fields are set when doctor creates a prescription.
 	private String drugName;
 	private int quantity;
@@ -50,7 +59,7 @@ public class Prescription {
 	private String dateCreated;
 	private int refills;
 	private ArrayList<FillRequest> fills = new ArrayList<>();
-	
+
 	public int getRxid() {
 		return rxid;
 	}

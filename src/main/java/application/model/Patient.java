@@ -22,12 +22,34 @@ public class Patient {
 	// Getters and Setters
 	private Doctor doctor;
 
+	// doctors last name
+	private String primaryName;
+
+	private int doctorId;
+
+	public int getDoctorId() {
+		return doctorId;
+	}
+
+	public void setDoctorId(int doctorId)
+	{
+		this.doctorId = doctorId;
+	}
+
 	public Doctor getDoctor() {
 		return doctor;
 	}
 
 	public void setDoctor(Doctor doctor) {
 		this.doctor = doctor;
+	}
+
+	public String getPrimaryName()
+	{
+		return primaryName;
+	}
+	public void setPrimaryName(String primaryName) {
+		this.primaryName = primaryName;
 	}
 	
 	public static Patient fromView(PatientView pv) {

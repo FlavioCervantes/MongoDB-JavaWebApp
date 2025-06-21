@@ -3,7 +3,9 @@ package application.model;
 import java.util.ArrayList;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
+@Document(collection = "pharmacy")
 public class Pharmacy {
 	
 	@Id

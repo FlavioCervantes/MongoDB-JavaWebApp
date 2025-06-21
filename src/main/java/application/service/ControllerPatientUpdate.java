@@ -1,96 +1,87 @@
 package application.service;
 
+import application.model.*;
+import view.PatientView;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 
-import view.*;
-/*
- * Controller class for patient interactions.
- *   register as a new patient.
- *   update patient profile.
- */
+import java.util.Optional;
+
 @Controller
 public class ControllerPatientUpdate {
-	
+
 	@Autowired
-	private JdbcTemplate jdbcTemplate;
-	
-	/*
-	 *  Display patient profile for patient id.
-	 */
-		// TODO search for patient by id
-		//  if not found, return to home page using return "index";
-		//  else create PatientView and add to model.
+	private PatientRepository patientRepository;
+
+	@Autowired
+	private DoctorRepository doctorRepository;
+
+	@Autowired
+	private SequenceService sequence;
+
+	// 🛠 GET fallback to prevent 405 error when someone directly accesses /patient/edit
+	@GetMapping("/patient/edit")
+	public String handleEditWithoutId() {
+		return "redirect:/patient/get";  // or redirect to home or error page
+	}
+
+	// ✅ Get form to edit patient by ID
 	@GetMapping("/patient/edit/{id}")
 	public String getUpdateForm(@PathVariable int id, Model model) {
-		try {
-			String query = "SELECT p.id, p.first_name, p.last_name, p.birth_date, p.ssn, p.street, p.city, p.state, p.zip, d.last_name AS primary_last_name " +
-					"FROM patient p JOIN doctor d ON p.doctor_id = d.id WHERE p.id = ?";
+		Optional<Patient> optionalPatient = patientRepository.findById(id);
+		if (optionalPatient.isPresent()) {
+			Patient patient = optionalPatient.get();
+			PatientView patientView = new PatientView();
+			patientView.setId(patient.getId());
+			patientView.setFirstName(patient.getFirstName());
+			patientView.setLastName(patient.getLastName());
+			patientView.setStreet(patient.getStreet());
+			patientView.setCity(patient.getCity());
+			patientView.setState(patient.getState());
+			patientView.setZipcode(patient.getZipcode());
+			patientView.setBirthdate(patient.getBirthdate());
+			patientView.setPrimaryName(patient.getPrimaryName());
 
-			PatientView patient = jdbcTemplate.queryForObject(query, new Object[]{id}, (rs, rowNum) -> {
-				PatientView pv = new PatientView();
-				pv.setId(rs.getInt("id"));
-				pv.setFirst_name(rs.getString("first_name"));
-				pv.setLast_name(rs.getString("last_name"));
-				pv.setBirthdate(rs.getDate("birth_date").toLocalDate().toString());
-				pv.setStreet(rs.getString("street"));
-				pv.setCity(rs.getString("city"));
-				pv.setState(rs.getString("state"));
-				pv.setZipcode(rs.getString("zip"));
-				pv.setPrimaryName(rs.getString("primary_last_name"));
-				return pv;
-			});
-
-			model.addAttribute("patient", patient);
-			return "patient_edit";  // return editable form with patient data
+			model.addAttribute("patient", patientView);
+			return "patient_edit";
+		} else {
+			model.addAttribute("message", "Patient not found.");
+			return "patient_get";
 		}
+	}
 
-		catch (Exception e) {
-			// patient not found, redirect to home page
-			model.addAttribute("message", "Patient not found");
-			return "index";  // return to home page
-		}
-}
-	
-	
-	/*
-	 * Process changes from patient_edit form
-	 *  Primary doctor, street, city, state, zip can be changed
-	 *  ssn, patient id, name, birthdate, ssn are read only in template.
-	 */
-	// TODO
-	// TODO update patient profile data in database
+	// patient update handling
 	@PostMapping("/patient/edit")
-	public String updatePatient(PatientView p, Model model) {
-		try {
-			// validate doctor last name
-			String doctorQuery = "SELECT id FROM doctor WHERE last_name = ?";
-			Integer doctorId = jdbcTemplate.queryForObject(doctorQuery, new Object[]{p.getPrimaryName()}, Integer.class);
+	public String updatePatient(PatientView patientView, Model model) {
+		Optional<Patient> optionalPatient = patientRepository.findById(patientView.getId());
+		if (optionalPatient.isPresent()) {
+			Patient patient = optionalPatient.get();
 
-			if (doctorId != null) {
-				model.addAttribute("message", "Doctor not found. Check the last name.");
-				model.addAttribute("patient", p);
-				return "patient_edit";
+			// Update editable fields
+			patient.setStreet(patientView.getStreet());
+			patient.setCity(patientView.getCity());
+			patient.setState(patientView.getState());
+			patient.setZipcode(patientView.getZipcode());
+
+			// Update doctor if provided
+			Optional<Doctor> doctorOpt = doctorRepository.findByLastName(patientView.getPrimaryName());
+			if (doctorOpt.isPresent()) {
+				Doctor doctor = doctorOpt.get();
+				patient.setPrimaryName(doctor.getLastName());
+			} else {
+				model.addAttribute("message", "Doctor not found. Update skipped.");
 			}
 
-			// update patient field
-			String updateQuery = "UPDATE patient SET doctor_id = ?, street = ?, city = ?, state = ?, zip = ? WHERE id = ?";
-			jdbcTemplate.update(updateQuery, p.getStreet(), p.getCity(), p.getState(), p.getZipcode(), doctorId, p.getId());
-
-			model.addAttribute("message", "Patient profile updated successfully.");
-			model.addAttribute("patient", p);
-			return "patient_show";  // return to patient profile view
-		}
-		catch (Exception e) {
-			// return to edit form with error message
-			model.addAttribute("message", "Error updating patient profile: " + e.getMessage());
-			model.addAttribute("patient", p);
-			return "patient_edit";
+			patientRepository.save(patient);
+			model.addAttribute("message", "Update successful.");
+			model.addAttribute("patient", patientView);
+			return "patient_show";
+		} else {
+			model.addAttribute("message", "Patient not found.");
+			model.addAttribute("patient", patientView);
+			return "patient_get";
 		}
 	}
 }
